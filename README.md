@@ -1,2 +1,2 @@
 # HabiSave
-A lightweight, responsive web platform for setting, tracking, and achieving personal savings goals. Built with a focus on simplicity, optional Open Banking integration, and gamified progress tracking to help digital-native users cultivate smart saving habits.
+HabiSave MVP is the minimal viable product of a goal-based savings tracker designed for young adults. This web app lets users create savings goals, log contributions manually or via bank API, and stay motivated with progress bars, badges, and milestone celebrations, all without the complexity of traditional budgeting tools.

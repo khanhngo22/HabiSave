@@ -1,16 +1,15 @@
 {
   "files": {
-    "main.css": "/HabiSave/static/css/main.dce6689d.css",
-    "main.js": "/HabiSave/static/js/main.73e3241b.js",
+    "main.css": "/HabiSave/static/css/main.54bf21dc.css",
+    "main.js": "/HabiSave/static/js/main.3d37cdd1.js",
     "static/js/453.0eb69475.chunk.js": "/HabiSave/static/js/453.0eb69475.chunk.js",
-    "static/media/logo.svg": "/HabiSave/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
     "index.html": "/HabiSave/index.html",
-    "main.dce6689d.css.map": "/HabiSave/static/css/main.dce6689d.css.map",
-    "main.73e3241b.js.map": "/HabiSave/static/js/main.73e3241b.js.map",
+    "main.54bf21dc.css.map": "/HabiSave/static/css/main.54bf21dc.css.map",
+    "main.3d37cdd1.js.map": "/HabiSave/static/js/main.3d37cdd1.js.map",
     "453.0eb69475.chunk.js.map": "/HabiSave/static/js/453.0eb69475.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.dce6689d.css",
-    "static/js/main.73e3241b.js"
+    "static/css/main.54bf21dc.css",
+    "static/js/main.3d37cdd1.js"
   ]
 }

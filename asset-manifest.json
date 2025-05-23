@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/HabiSave/static/css/main.d0a33d4a.css",
-    "main.js": "/HabiSave/static/js/main.3a2ce460.js",
+    "main.css": "/HabiSave/static/css/main.1584ec4e.css",
+    "main.js": "/HabiSave/static/js/main.9ed48292.js",
     "static/js/453.0eb69475.chunk.js": "/HabiSave/static/js/453.0eb69475.chunk.js",
     "index.html": "/HabiSave/index.html",
-    "main.d0a33d4a.css.map": "/HabiSave/static/css/main.d0a33d4a.css.map",
-    "main.3a2ce460.js.map": "/HabiSave/static/js/main.3a2ce460.js.map",
+    "main.1584ec4e.css.map": "/HabiSave/static/css/main.1584ec4e.css.map",
+    "main.9ed48292.js.map": "/HabiSave/static/js/main.9ed48292.js.map",
     "453.0eb69475.chunk.js.map": "/HabiSave/static/js/453.0eb69475.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.d0a33d4a.css",
-    "static/js/main.3a2ce460.js"
+    "static/css/main.1584ec4e.css",
+    "static/js/main.9ed48292.js"
   ]
 }

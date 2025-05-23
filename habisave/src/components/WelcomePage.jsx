@@ -6,11 +6,11 @@ export default function WelcomePage() {
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem('habisave_currentUser'));
 
-  useEffect(() => {
-    if (currentUser) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [currentUser, navigate]);
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     navigate('/dashboard', { replace: true });
+  //   }
+  // }, [currentUser, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-100 to-teal-300 flex flex-col justify-center items-center text-center px-4 py-8">
@@ -19,7 +19,7 @@ export default function WelcomePage() {
         Build better saving habits with simple, goal-based tracking. Let’s get started!
       </p>
       <div className="flex flex-col md:flex-row gap-4">
-        <Link to="/signup">
+        <Link to={currentUser ? '/dashboard' : '/signup'}>
           <button className="bg-white hover:bg-teal-50 text-teal-600 border border-teal-600 font-semibold py-2 px-6 rounded-xl shadow transition">
             Sign Up
           </button>

@@ -32,6 +32,7 @@ const getRequestsKey  = (userId) => `habisave_requests_${userId}`;
 
 export default function Dashboard() {
   const navigate    = useNavigate();
+  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
   const currentUser = JSON.parse(localStorage.getItem(SESSION_KEY));
   // **only** build keys once we know we have a user
   const userId      = currentUser?.id;

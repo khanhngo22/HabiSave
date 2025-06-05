@@ -1,4 +1,3 @@
-// src/components/Dashboard.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
@@ -56,9 +55,16 @@ export default function Dashboard() {
   const [newFriend, setNewFriend] = useState('');
   const [title, setTitle]         = useState('');
   const [target, setTarget]       = useState('');
+  const [shareWith, setShareWith] = useState(null);
   const [celebration, setCelebration] = useState(null);
   const [menuOpen, setMenuOpen]   = useState(false);
   const menuRef                   = useRef();
+
+  // For development/demo purposes
+  const [isPremium, setIsPremium] = useState(() => {
+    const status = localStorage.getItem(`habisave_premium_${currentUser?.id}`);
+    return status === 'true';
+  });
 
   // Redirect if not logged in
   useEffect(() => {
@@ -90,55 +96,118 @@ export default function Dashboard() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   }, [history, HISTORY_KEY]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const storedGoals = JSON.parse(localStorage.getItem(userKey) || '[]');
+      setGoals(prev => {
+        const prevJson = JSON.stringify(prev);
+        const storedJson = JSON.stringify(storedGoals);
+        return prevJson !== storedJson ? storedGoals : prev;
+      });
+    }, 3000); // sync every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [userKey]);
+
   const handleLogout = () => {
     localStorage.removeItem(SESSION_KEY);
     navigate('/', { replace: true });
   };
 
   // Goals
-  const handleAddGoal = e => {
+  const handleAddGoal = (e) => {
     e.preventDefault();
     if (!title || !target) return;
-    const newGoal = { id: Date.now(), title, targetAmount: Number(target), currentAmount: 0, createdAt: Date.now() };
-    setGoals(prev => [...prev, newGoal]);
-    setTitle(''); setTarget('');
+
+    const newGoal = {
+      id: Date.now(),
+      title,
+      targetAmount: Number(target),
+      currentAmount: 0,
+      createdAt: Date.now(),
+      sharedWith: shareWith || null
+    };
+
+    // Save to current user
+    const updatedGoals = [...goals, newGoal];
+    setGoals(updatedGoals);
+
+    // Save to friend's list if shared
+    if (isPremium && shareWith) {
+      const friendKey = getStorageKey(shareWith.id);
+      const friendGoals = JSON.parse(localStorage.getItem(friendKey) || '[]');
+
+      const sharedCopy = {
+        ...newGoal,
+        sharedWith: { id: currentUser.id, name: currentUser.name }
+      };
+
+      localStorage.setItem(friendKey, JSON.stringify([...friendGoals, sharedCopy]));
+    }
+
+    // Reset form
+    setTitle('');
+    setTarget('');
+    setShareWith(null);
   };
 
-  const handleAddContribution = id => {
-    const amount = parseFloat(prompt('Enter amount (€):'));
+  const handleAddContribution = (id, quickAmount = null) => {
+    const goal = goals.find(g => g.id === id);
+    if (!goal) return;
+
+    const amount = quickAmount ?? parseFloat(prompt('Enter amount (€):'));
     if (!amount || amount <= 0) return;
 
-    // 1) Compute updated goals array
     const updatedGoals = goals.map(g => {
       if (g.id !== id) return g;
-      const updated = { ...g, currentAmount: g.currentAmount + amount };
+      const updated = { ...g, currentAmount: g.currentAmount + amount, lastUpdatedBy: currentUser.name };
       if (g.currentAmount < g.targetAmount && updated.currentAmount >= g.targetAmount) {
         setCelebration({ title: g.title });
       }
       return updated;
     });
 
-    // 2) Update goals state once
     setGoals(updatedGoals);
 
-    // 3) Now record a single history snapshot
-    const newTotal = updatedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
-    const updatedGoal = updatedGoals.find(g => g.id === id);
+    // If this is a shared goal, also update the friend's copy
+    if (goal.sharedWith) {
+      const friendKey = getStorageKey(goal.sharedWith.id);
+      const friendGoals = JSON.parse(localStorage.getItem(friendKey) || '[]');
+      const updatedFriendGoals = friendGoals.map(g =>
+        g.id === id ? { ...g, currentAmount: g.currentAmount + amount, lastUpdatedBy: currentUser.name } : g
+      );
+      localStorage.setItem(friendKey, JSON.stringify(updatedFriendGoals));
+    }
+
+    // History tracking (optional, already implemented elsewhere)
+    const total = updatedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
     setHistory(prev => [
       ...prev,
       {
-        date:     new Date().toLocaleDateString(),
-        goalName: updatedGoal.title,
-        total:    newTotal
+        date: new Date().toLocaleDateString(),
+        goalName: goal.title,
+        total: total
       }
     ]);
   };
 
-  const handleDelete = id => {
+  const handleDelete = (id) => {
+    const goalToDelete = goals.find(g => g.id === id);
+    if (!goalToDelete) return;
+
     if (window.confirm('Delete this goal?')) {
       setGoals(prev => prev.filter(g => g.id !== id));
+
+      // If shared and current user is the owner, also delete from friend's list
+      if (goalToDelete.sharedWith && (!goalToDelete.sharedWith.id || goalToDelete.sharedWith.id !== currentUser.id)) {
+        const friendKey = getStorageKey(goalToDelete.sharedWith.id);
+        const friendGoals = JSON.parse(localStorage.getItem(friendKey) || '[]');
+        const updatedFriendGoals = friendGoals.filter(g => g.id !== id);
+        localStorage.setItem(friendKey, JSON.stringify(updatedFriendGoals));
+      }
     }
   };
+
   const handleEdit = id => {
     const newTitle = prompt('New title:');
     if (newTitle) setGoals(prev => prev.map(g => g.id===id ? { ...g, title: newTitle } : g));
@@ -226,6 +295,31 @@ export default function Dashboard() {
     <div className="relative mt-16 p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
       {/* Taskbar */}
       <nav className="fixed top-0 left-0 right-0 bg-teal-600 shadow px-6 h-16 flex items-center justify-end z-40">
+
+        <div className="flex items-center px-4 py-2 text-sm text-gray-800 space-x-2">
+          <span>Premium (Toggle for developers):</span>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isPremium}
+              onChange={() => {
+                const updated = !isPremium;
+                setIsPremium(updated);
+                localStorage.setItem(`habisave_premium_${currentUser?.id}`, updated);
+              }}
+            />
+            <div className="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-teal-500 transition-all relative">
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-transform peer-checked:translate-x-5" />
+            </div>
+          </label>
+        </div>
+      {isPremium && (
+        <div className="text-sm text-teal-700 font-medium mb-2">
+          ✅ Premium Activated
+        </div>
+      )}
+
         <div className="relative" ref={menuRef}>
           <button onClick={()=>setMenuOpen(!menuOpen)} className="flex items-center space-x-2 px-4 py-2 rounded hover:bg-teal-700 transition">
             <span className="text-white font-medium">Hello, {currentUser?.name}</span>
@@ -271,27 +365,65 @@ export default function Dashboard() {
             className="w-full border rounded px-3 py-2 mb-3"/>
           <input type="number" value={target} onChange={e=>setTarget(e.target.value)} placeholder="Target Amount (€)"
             className="w-full border rounded px-3 py-2 mb-3"/>
+          {isPremium && friends.length > 0 && (
+            <div className="mb-3">
+              <label className="text-sm text-gray-700 block mb-1">Share with a friend (optional)</label>
+              <select
+                value={shareWith?.id || ''}
+                onChange={(e) => {
+                  const selected = friends.find(f => f.id === Number(e.target.value));
+                  setShareWith(selected || null);
+                }}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">Choose a friend (optional)</option>
+                {friends.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button type="submit" className="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition">Create Goal</button>
         </form>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {goals.map(g=>{
-            const percent=Math.min((g.currentAmount/g.targetAmount)*100,100);
+          {goals.map(g => {
+            const percent = Math.min((g.currentAmount / g.targetAmount) * 100, 100);
             return (
-              <div key={g.id} className="bg-white rounded-lg p-4 shadow relative">
-                <div className="absolute top-2 right-2 flex space-x-1">
-                  <button onClick={()=>handleEdit(g.id)} className="text-gray-500 hover:text-teal-600">✏️</button>
-                  <button onClick={()=>handleDelete(g.id)} className="text-red-400 hover:text-red-600">🗑️</button>
-                </div>
-                <h3 className="text-lg font-semibold text-teal-800 mb-1">{g.title}</h3>
+              <div key={g.id} className={`rounded-lg p-4 shadow relative transition-all duration-300 ease-in-out ${
+                                          g.sharedWith
+                                            ? 'border-l-4 border-teal-400 bg-teal-50 animate-shared'
+                                            : 'bg-white'
+              }`}>
+                {(!g.sharedWith || g.sharedWith.id !== currentUser.id) && (
+                  <div className="absolute top-2 right-2 flex space-x-1">
+                    <button onClick={() => handleEdit(g.id)} className="text-gray-500 hover:text-teal-600">✏️</button>
+                    <button onClick={() => handleDelete(g.id)} className="text-red-400 hover:text-red-600">🗑️</button>
+                  </div>
+                )}
+
+                <h3 className="text-lg font-semibold text-teal-800 mb-1">{g.sharedWith ? '🤝 ' : ''}{g.title}</h3>
+
+                {/* Shared With Indicator */}
+                {g.sharedWith && (
+                  <p className="text-xs text-teal-600 mt-1">
+                    🔗 Shared with <strong>{g.sharedWith.name}</strong>
+                  </p>
+                )}
+                {g.lastUpdatedBy && g.sharedWith && (
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    Last updated by <strong>{g.lastUpdatedBy}</strong> on {new Date(g.createdAt).toLocaleDateString()}
+                  </p>
+                )}
+
                 <div className="mb-1">{renderBadges(g)}</div>
                 <div className="bg-gray-200 rounded-full h-4 mb-2 overflow-hidden">
-                  <div className="bg-teal-500 h-4 rounded-full" style={{width:`${percent}%`}}/>
+                  <div className="bg-teal-500 h-4 rounded-full" style={{ width: `${percent}%` }} />
                 </div>
                 <p className="text-sm text-gray-600 mb-2">€{g.currentAmount.toFixed(2)} / €{g.targetAmount.toFixed(2)}</p>
-                <button onClick={()=>handleAddContribution(g.id)} className="bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 transition">Add Contribution</button>
+                <button onClick={() => handleAddContribution(g.id)} className="bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 transition">Add Contribution</button>
                 <p className="text-xs text-gray-500 mt-2">Tip: +€10 each week? Quick add:</p>
-                <button onClick={()=>handleAddContribution(g.id,10)} className="text-xs text-teal-500 hover:underline">+ €10</button>
+                <button onClick={() => handleAddContribution(g.id, 10)} className="text-xs text-teal-500 hover:underline">+ €10</button>
               </div>
             );
           })}
@@ -362,79 +494,98 @@ export default function Dashboard() {
         </div>
       </div>
       {/* Right column: Insights & Analytics */}
-      <aside className="w-full lg:w-1/3 space-y-6">
-        {/* Insights & Analytics */}
-        <div className="bg-white rounded-lg p-4 shadow">
-          <h2 className="text-xl font-semibold text-teal-600 mb-2">Insights & Analytics</h2>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">
-            Total Contribution Over Time
-          </h3>
-          <div classname="h-100">
-            <Line
-              data={{
-                labels: history.map(h => `${h.date} - ${h.goalName}`),
-                datasets: [{
-                  label: 'Total Saved (€)',
-                  data: history.map(h => h.total),
-                  fill: false,
-                  borderColor: 'teal',
-                  tension: 0.4
-                }]
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: { padding: { top: 20 } },
-                scales: {
-                  x: {
-                    title: { display: true, text: 'Date / Goal' }
-                  },
-                  y: {
-                    title: { display: true, text: 'Total (€)' }
-                  }
-                },
-                plugins: { legend: { position: 'bottom' } }
-              }}
-            />
+      {!isPremium && (
+        <div className="bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-300 text-yellow-900 px-6 py-5 rounded-xl shadow-md mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold mb-1">Go Premium & Save Smarter 🚀</h2>
+            <p className="text-sm text-yellow-800">
+              Get advanced insights, auto-sync, goal sharing, and more.
+              <a href="/pricing" className="text-teal-600 hover:underline ml-1">Learn more</a>
+            </p>
           </div>
+          <button
+            onClick={() => navigate('/pricing')}
+            className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition"
+          >
+            Upgrade Now
+          </button>
         </div>
-
-        <div className="bg-white rounded-lg p-4 shadow">
-          <h3 className="text-lg font-medium text-gray-800 mb-2">
-            Spending vs Saving (Coming Soon!)
-          </h3>
-          <div className="h-64">
-            <Line
-              data={{
-                labels: ['Jan', 'Feb', 'Mar', 'Apr'],
-                datasets: [
-                  {
-                    label: 'Income (€)',
-                    data: [1000, 1200, 1100, 1300],
-                    borderDash: [5, 5],
-                    borderColor: 'gray',
-                    tension: 0.4
-                  },
-                  {
-                    label: 'Contributions (€)',
-                    data: [200, 300, 250, 400],
+      )}
+      {isPremium && (
+        <aside className="w-full lg:w-1/3 space-y-6">
+          {/* Insights & Analytics */}
+          <div className="bg-white rounded-lg p-4 shadow">
+            <h2 className="text-xl font-semibold text-teal-600 mb-2">Insights & Analytics</h2>
+            <h3 className="text-lg font-medium text-gray-800 mb-2">
+              Total Contribution Over Time
+            </h3>
+            <div classname="h-100">
+              <Line
+                data={{
+                  labels: history.map(h => `${h.date} - ${h.goalName}`),
+                  datasets: [{
+                    label: 'Total Saved (€)',
+                    data: history.map(h => h.total),
+                    fill: false,
                     borderColor: 'teal',
                     tension: 0.4
-                  }
-                ]
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: { padding: { top: 20 } },
-                plugins: {
-                  legend: { position: 'bottom' }
-                }
-              }}
-            />
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  layout: { padding: { top: 20 } },
+                  scales: {
+                    x: {
+                      title: { display: true, text: 'Date / Goal' }
+                    },
+                    y: {
+                      title: { display: true, text: 'Total (€)' }
+                    }
+                  },
+                  plugins: { legend: { position: 'bottom' } }
+                }}
+              />
+            </div>
           </div>
-        </div>
-      </aside>
+
+          <div className="bg-white rounded-lg p-4 shadow">
+            <h3 className="text-lg font-medium text-gray-800 mb-2">
+              Spending vs Saving (Coming Soon!)
+            </h3>
+            <div className="h-64">
+              <Line
+                data={{
+                  labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+                  datasets: [
+                    {
+                      label: 'Income (€)',
+                      data: [1000, 1200, 1100, 1300],
+                      borderDash: [5, 5],
+                      borderColor: 'gray',
+                      tension: 0.4
+                    },
+                    {
+                      label: 'Contributions (€)',
+                      data: [200, 300, 250, 400],
+                      borderColor: 'teal',
+                      tension: 0.4
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  layout: { padding: { top: 20 } },
+                  plugins: {
+                    legend: { position: 'bottom' }
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

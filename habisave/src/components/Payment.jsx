@@ -1,4 +1,3 @@
-// src/components/Payment.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 
@@ -17,6 +16,7 @@ export default function Payment() {
     if (!currentUser) navigate('/', { replace: true });
   }, [currentUser, navigate]);
 
+  const [method, setMethod] = useState('');
   const [form, setForm] = useState({
     name: '',
     number: '',
@@ -25,7 +25,7 @@ export default function Payment() {
   });
   const [error, setError] = useState('');
 
-  const handleChange = e => {
+  const handleFormChange = e => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
   };
@@ -37,76 +37,105 @@ export default function Payment() {
       setError('All fields are required.');
       return;
     }
-    // TODO: integrate payment gateway
-    alert(`Payment successful for ${planDetails.label}!`);
+    if (currentUser) {
+      localStorage.setItem(`habisave_premium_${currentUser.id}`, 'true');
+    }
+
+    alert(`Payment successful via ${method} for ${planDetails.label}!`);
     navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      <header className="w-full max-w-md mb-8">
+      <header className="w-full max-w-md mb-8 text-center">
+        <h1 className="text-2xl font-bold text-teal-700">{planDetails.label}</h1>
+        <p className="text-gray-600 mb-2">{planDetails.price}</p>
         <Link to="/pricing" className="text-teal-600 hover:underline">&larr; Back to Plans</Link>
-        <h1 className="text-2xl font-bold text-teal-700 mt-4">{planDetails.label}</h1>
-        <p className="text-gray-600">{planDetails.price}</p>
       </header>
 
-      <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-md">
-        {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
-            <input
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="John Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-            <input
-              name="number"
-              type="text"
-              value={form.number}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="1234 5678 9012 3456"
-            />
-          </div>
-          <div className="flex space-x-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
-              <input
-                name="expiry"
-                type="text"
-                value={form.expiry}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                placeholder="MM/YY"
-              />
-            </div>
-            <div className="w-24">
-              <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-              <input
-                name="cvv"
-                type="password"
-                value={form.cvv}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                placeholder="123"
-              />
-            </div>
-          </div>
+      {/* Payment Method Selection */}
+      {!method && (
+        <div className="bg-white rounded-lg shadow p-6 w-full max-w-md text-center space-y-4">
+          <h2 className="text-lg font-semibold text-teal-700 mb-2">Choose Payment Method</h2>
           <button
-            type="submit"
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 rounded-lg transition"
+            onClick={() => setMethod('Credit Card')}
+            className="w-full py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
           >
-            Pay Now
+            Pay with Credit Card
           </button>
-        </form>
-      </div>
+          <button
+            onClick={() => alert('Coming soon!')}
+            className="w-full py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          >
+            Pay with PayPal (Coming Soon)
+          </button>
+          <button
+            onClick={() => alert('Coming soon!')}
+            className="w-full py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          >
+            Bank Transfer (Coming Soon)
+          </button>
+        </div>
+      )}
+
+      {/* Credit Card Form */}
+      {method === 'Credit Card' && (
+        <div className="bg-white rounded-lg shadow p-6 w-full max-w-md mt-6">
+          <h2 className="text-lg font-semibold text-teal-700 mb-4">Pay with {method}</h2>
+          {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleFormChange}
+              placeholder="Cardholder Name"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              name="number"
+              value={form.number}
+              onChange={handleFormChange}
+              placeholder="Card Number"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+            />
+            <div className="flex gap-4">
+              <input
+                type="text"
+                name="expiry"
+                value={form.expiry}
+                onChange={handleFormChange}
+                placeholder="MM/YY"
+                className="flex-1 border border-gray-300 rounded px-3 py-2"
+              />
+              <input
+                type="password"
+                name="cvv"
+                value={form.cvv}
+                onChange={handleFormChange}
+                placeholder="CVV"
+                className="w-24 border border-gray-300 rounded px-3 py-2"
+              />
+            </div>
+            <div className="flex justify-between mt-6">
+              <button
+                type="button"
+                onClick={() => setMethod(null)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+              >
+                ← Previous
+              </button>
+              <button
+                type="submit"
+                className="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700"
+              >
+                Pay Now
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

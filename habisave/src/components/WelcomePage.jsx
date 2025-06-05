@@ -1,4 +1,3 @@
-// src/components/WelcomePage.jsx
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 

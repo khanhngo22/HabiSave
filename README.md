@@ -79,6 +79,7 @@ When running the app online (via [**GitHub Pages**](https://docs.github.com/en/p
 
 - [React](https://create-react-app.dev/) (with hooks + router)
 - [Node.js](https://nodejs.org/en)
+- [Chart.js](https://www.chartjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 
 ## License

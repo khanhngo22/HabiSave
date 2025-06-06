@@ -78,6 +78,7 @@ When running the app online (via [**GitHub Pages**](https://docs.github.com/en/p
 ## 🔧 Tech Stack
 
 - [React](https://create-react-app.dev/) (with hooks + router)
+- [Node.js](https://nodejs.org/en)
 - [Tailwind CSS](https://tailwindcss.com/)
 
 ## License

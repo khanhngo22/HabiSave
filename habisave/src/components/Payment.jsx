@@ -39,6 +39,7 @@ export default function Payment() {
     }
     if (currentUser) {
       localStorage.setItem(`habisave_premium_${currentUser.id}`, 'true');
+      localStorage.setItem(`habisave_plan_${currentUser.id}`, plan);
     }
 
     alert(`Payment successful via ${method} for ${planDetails.label}!`);

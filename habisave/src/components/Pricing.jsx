@@ -6,6 +6,8 @@ const SESSION_KEY = 'habisave_currentUser';
 export default function Pricing() {
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem(SESSION_KEY));
+  const isPremium = localStorage.getItem(`habisave_premium_${currentUser?.id}`) === 'true';
+  const userPlan = localStorage.getItem(`habisave_plan_${currentUser?.id}`); 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
 
@@ -101,12 +103,18 @@ export default function Pricing() {
             <li>✔️ Early access to new features</li>
           </ul>
           <div className="text-3xl font-bold text-teal-700 mb-4">€0.99 / month</div>
-          <button
-            onClick={() => navigate('/payment/premium')}
-            className="w-full bg-teal-600 text-white font-semibold py-2 rounded hover:bg-teal-700 transition"
-          >
-            Upgrade Now
-          </button>
+          {isPremium? (
+            <div className="w-full text-green-600 font-semibold flex items-center gap-2">
+              ✅ Already Upgraded
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/payment/premium')}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded transition"
+            >
+              Upgrade Now
+            </button>
+          )}
         </div>
 
         {/* Lifetime Plan */}
@@ -118,12 +126,18 @@ export default function Pricing() {
             <li>✔️ No recurring fees</li>
           </ul>
           <div className="text-3xl font-bold text-teal-700 mb-4">€49.99</div>
-          <button
-            onClick={() => navigate('/payment/lifetime')}
-            className="w-full bg-teal-600 text-white font-semibold py-2 rounded hover:bg-teal-700 transition"
-          >
-            Buy Lifetime
-          </button>
+          {isPremium && userPlan === 'lifetime' ? (
+            <div className="w-full text-green-600 font-semibold flex items-center gap-2">
+              ✅ Lifetime Member
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/payment/lifetime')}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded transition"
+            >
+              Upgrade Now
+            </button>
+          )}
         </div>
       </div>
     </div>

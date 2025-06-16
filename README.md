@@ -20,6 +20,8 @@ This repository contains two main branches:
 You can try the live app directly here, it's hosted via [**GitHub Pages**](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages):
 👉 [**Visit HabiSave**](https://khanhngo22.github.io/HabiSave/)
 
+In case the link is broken, here is the raw link: https://khanhngo22.github.io/HabiSave/
+
 ---
 
 ### 🛠️ Alternative: Run Locally

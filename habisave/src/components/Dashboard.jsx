@@ -535,7 +535,6 @@ export default function Dashboard() {
               <h2 className="text-lg font-bold mb-1">Go Premium & Save Smarter 🚀</h2>
               <p className="text-sm text-yellow-800">
                 Get advanced insights, auto-sync, goal sharing, and more.
-                <a href="/pricing" className="text-teal-600 hover:underline ml-1">Learn more</a>
               </p>
             </div>
             <button
